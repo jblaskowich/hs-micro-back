@@ -100,12 +100,29 @@ func reqReply() {
 	*/
 	nc.Subscribe(natsGet, func(m *nats.Msg) {
 		log.Println("Repl sent on " + m.Reply)
-		err := nc.Publish(string(m.Reply), []byte(`[{"ID": 1, "Title": "hello world", "Content": "blablabla"}]`))
+		err := nc.Publish(string(m.Reply), selectPosts())
+		//err := nc.Publish(string(m.Reply), []byte(`[{"ID": 1, "Title": "hello world", "Content": "blablabla"}]`))
 		if err != nil {
 			log.Println(err.Error())
 		}
 		nc.Flush()
 	})
+}
+
+func selectPosts() []byte {
+	messages := []Message{}
+	msg, err := database.Query("SELECT id,post_title,post_content,post_date FROM post ORDER BY id DESC;")
+	if err != nil {
+		log.Println(err.Error())
+	}
+	defer msg.Close()
+	for msg.Next() {
+		thisMsg := Message{}
+		msg.Scan(&thisMsg.ID, &thisMsg.Title, &thisMsg.Content, &thisMsg.Date)
+		messages = append(messages, thisMsg)
+	}
+	posts, _ := json.Marshal(messages)
+	return posts
 }
 
 func main() {

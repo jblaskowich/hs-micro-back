@@ -4,7 +4,8 @@ LABEL maintainer="jblaskowichgmail.com"
 
 WORKDIR /
 
-RUN go get -v ./...
+RUN go get -v -d github.com/go-sql-driver/mysql
+RUN go get -v -d github.com/nats-io/go-nats
 
 COPY . .
 

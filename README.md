@@ -67,5 +67,5 @@ $ export DBPORT="your_db_port"                 // default :3306
 $ export DBBASE="your_db_database"             // default blowofmouth
 $ docker run -d -e NATSURL=${NATSURL} -e NATSPORT=${NATSPORT} -e NATSPOST=${NATSPOST} -e NATSGET=${NATSGET} \ 
     -e DBUSER=${DBUSER} -e DBPASS=${DBPASS} -e DBHOST=${DBHOST} -e DBPORT=${DBPORT} -e DBBASE=${DBBASE} \ 
-    -p 8080:8080 jblaskovich/hs-micro-back:$release
+    jblaskowich/hs-micro-back:$release
 ```

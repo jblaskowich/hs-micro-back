@@ -1,10 +1,11 @@
 FROM golang:1.11.5
 
-LABEL maintainer="jblaskowichgmail.com"
+LABEL maintainer="jblaskowich@gmail.com"
 
 WORKDIR /
 
 RUN go get -v -d github.com/go-sql-driver/mysql
+
 RUN go get -v -d github.com/nats-io/go-nats
 
 COPY . .

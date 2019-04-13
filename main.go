@@ -5,21 +5,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
-	"github.com/gorilla/mux"
 	nats "github.com/nats-io/go-nats"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
+	// NATS
 	natsURL  = "demo.nats.io"           // Can be superseded by env NATSURL
 	natsPort = ":4222"                  // Can be superseded by env NATSPORT
 	natsPost = "zjnO12CgNkHD0IsuGd89zA" // Can be superseded by env NATSPOST
 	natsGet  = "OWM7pKQNbXd7l75l21kOzA" // Can be superseded by env NATSGET
+	// SQL
+	dbUser   = "user"        // Can be superseded by env DBUSER
+	dbPass   = "password"    // Can be superseded by env DBPASS
+	dbHost   = "127.0.0.1"   // Can be superseded by env DBHOST
+	dbPort   = ":3306"       // Can be superseded by env DBPORT
+	dbBase   = "blowofmouth" // Can be superseded by env DBBASE
 	database *sql.DB
 )
 
@@ -31,23 +36,14 @@ type Message struct {
 	Date    string
 }
 
-func watchPost() {
-	if os.Getenv("NATSURL") != "" {
-		natsURL = os.Getenv("NATSURL")
-	}
-	if os.Getenv("NATSPORT") != "" {
-		natsPort = os.Getenv("NATSPORT")
-	}
-	if os.Getenv("NATSCHAN") != "" {
-		natsPost = os.Getenv("NATSPOST")
-	}
+// watchPost capture new posts sent through NATS
+func watchPost(url, port, subj string) {
 
 	nc, err := nats.Connect("nats://" + natsURL + natsPort)
 	if err != nil {
 		log.Println(err.Error())
 	}
 	nc.Subscribe(natsPost, func(m *nats.Msg) {
-		//fmt.Printf("Received message: %s\n", string(m.Data))
 		msg := Message{}
 		err := json.Unmarshal(m.Data, &msg)
 		if err != nil {
@@ -55,12 +51,12 @@ func watchPost() {
 		}
 		t := time.Now()
 		msg.Date = t.Format("2006-01-02 15:04:05")
-		save2Database(msg)
-		//log.Printf("Received message, Title: %s, Content: %s, Date: %s\n", msg.Title, msg.Content, msg.Date)
+		save2DatabaseSQL(msg)
 	})
 }
 
-func save2Database(m Message) {
+// save2DatabaseSQL reccord posts in SQL database (MySQL, MariaDB)
+func save2DatabaseSQL(m Message) {
 	/*
 		Prepare your Database by creating the following TABLE:
 
@@ -78,16 +74,8 @@ func save2Database(m Message) {
 	}
 }
 
-func reqReply() {
-	if os.Getenv("NATSURL") != "" {
-		natsURL = os.Getenv("NATSURL")
-	}
-	if os.Getenv("NATSPORT") != "" {
-		natsPort = os.Getenv("NATSPORT")
-	}
-	if os.Getenv("NATSCHAN") != "" {
-		natsGet = os.Getenv("NATSGET")
-	}
+// reqReply waits for post request, and return database rows
+func reqReply(url, port, subj string) {
 
 	nc, err := nats.Connect("nats://" + natsURL + natsPort)
 	if err != nil {
@@ -109,6 +97,7 @@ func reqReply() {
 	})
 }
 
+// selectPosts is responsible of the queries (SELECT) in the database, and return an array of rows
 func selectPosts() []byte {
 	messages := []Message{}
 	msg, err := database.Query("SELECT id,post_title,post_content,post_date FROM post ORDER BY id DESC;")
@@ -126,26 +115,35 @@ func selectPosts() []byte {
 }
 
 func main() {
-	dbUser := os.Getenv("DBUSER")
-	if dbUser == "" {
-		dbUser = "user"
+	if os.Getenv("DBUSER") != "" {
+		dbUser = os.Getenv("DBUSER")
 	}
-	dbPass := os.Getenv("DBPASS")
-	if dbPass == "" {
-		dbPass = "password"
+	if os.Getenv("DBPASS") != "" {
+		dbPass = os.Getenv("DBPASS")
 	}
-	dbHost := os.Getenv("DBHOST")
-	if dbHost == "" {
-		dbHost = "127.0.0.1"
+	if os.Getenv("DBHOST") != "" {
+		dbHost = os.Getenv("DBHOST")
 	}
-	dbPort := os.Getenv("DBBASE")
-	if dbPort == "" {
-		dbPort = ":3306"
+	if os.Getenv("DNPORT") != "" {
+		dbPort = os.Getenv("DNPORT")
 	}
-	dbBase := os.Getenv("DBBASE")
-	if dbBase == "" {
-		dbBase = "blowofmouth"
+	if os.Getenv("DBBASE") != "" {
+		dbBase = os.Getenv("DBBASE")
 	}
+
+	if os.Getenv("NATSURL") != "" {
+		natsURL = os.Getenv("NATSURL")
+	}
+	if os.Getenv("NATSPORT") != "" {
+		natsPort = os.Getenv("NATSPORT")
+	}
+	if os.Getenv("NATSPOST") != "" {
+		natsPost = os.Getenv("NATSPOST")
+	}
+	if os.Getenv("NATSGET") != "" {
+		natsGet = os.Getenv("NATSGET")
+	}
+
 	dbConn := fmt.Sprintf("%s:%s@tcp(%s%s)/%s", dbUser, dbPass, dbHost, dbPort, dbBase)
 	db, err := sql.Open("mysql", dbConn)
 	if err != nil {
@@ -154,13 +152,13 @@ func main() {
 	}
 	database = db
 
-	watchPost()
-	reqReply()
+	watchPost(natsURL, natsPort, natsPost)
+	reqReply(natsURL, natsPort, natsGet)
 	port := os.Getenv("HS-MICRO-BACK")
 	if port == "" {
 		port = ":9090"
 	}
-	rtr := mux.NewRouter()
-	http.Handle("/", rtr)
-	http.ListenAndServe(port, nil)
+
+	for {
+	}
 }

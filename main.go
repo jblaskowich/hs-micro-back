@@ -42,6 +42,8 @@ func watchPost(url, port, subj string) {
 	nc, err := nats.Connect("nats://" + url + port)
 	if err != nil {
 		log.Println(err.Error())
+	} else {
+		log.Printf("Connect to nats://%s%s on %s\n"+url, port, subj)
 	}
 	nc.Subscribe(subj, func(m *nats.Msg) {
 		msg := Message{}
@@ -79,7 +81,9 @@ func reqReply(url, port, subj string) {
 
 	nc, err := nats.Connect("nats://" + url + port)
 	if err != nil {
-		log.Println(err.Error())
+		log.Fatal(err.Error())
+	} else {
+		log.Printf("Connect to nats://%s%s on %s\n"+url, port, subj)
 	}
 
 	/*
@@ -115,6 +119,7 @@ func selectPosts() []byte {
 }
 
 func main() {
+	// Database
 	if os.Getenv("DBUSER") != "" {
 		dbUser = os.Getenv("DBUSER")
 	}
@@ -131,6 +136,7 @@ func main() {
 		dbBase = os.Getenv("DBBASE")
 	}
 
+	// NATS
 	if os.Getenv("NATSURL") != "" {
 		natsURL = os.Getenv("NATSURL")
 	}
@@ -148,7 +154,9 @@ func main() {
 	db, err := sql.Open("mysql", dbConn)
 	if err != nil {
 		log.Printf("Couldn't connect to %s%s/%s\n"+dbHost, dbPort, dbBase)
-		log.Println(err.Error())
+		log.Fatalln(err.Error())
+	} else {
+		log.Printf("Connect to %s%s/%s\n"+dbHost, dbPort, dbBase)
 	}
 	database = db
 

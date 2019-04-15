@@ -43,7 +43,7 @@ func watchPost(url, port, subj string) {
 	if err != nil {
 		log.Println(err.Error())
 	} else {
-		log.Printf("Connect to nats://%s%s on %s\n"+url, port, subj)
+		log.Printf("Connect to nats://%s%s on %s\n", url, port, subj)
 	}
 	nc.Subscribe(subj, func(m *nats.Msg) {
 		msg := Message{}
@@ -83,7 +83,7 @@ func reqReply(url, port, subj string) {
 	if err != nil {
 		log.Fatal(err.Error())
 	} else {
-		log.Printf("Connect to nats://%s%s on %s\n"+url, port, subj)
+		log.Printf("Connect to nats://%s%s on %s\n", url, port, subj)
 	}
 
 	/*
@@ -156,7 +156,7 @@ func main() {
 		log.Printf("Couldn't connect to %s%s/%s\n"+dbHost, dbPort, dbBase)
 		log.Fatalln(err.Error())
 	} else {
-		log.Printf("Connect to %s%s/%s\n"+dbHost, dbPort, dbBase)
+		log.Printf("Connect to %s%s/%s\n", dbHost, dbPort, dbBase)
 	}
 	database = db
 

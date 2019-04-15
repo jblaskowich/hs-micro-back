@@ -46,6 +46,7 @@ func watchPost(url, port, subj string) {
 		log.Printf("Connect to nats://%s%s on %s\n", url, port, subj)
 	}
 	nc.Subscribe(subj, func(m *nats.Msg) {
+		log.Println("new reccord sent to the database")
 		msg := Message{}
 		err := json.Unmarshal(m.Data, &msg)
 		if err != nil {
@@ -53,12 +54,15 @@ func watchPost(url, port, subj string) {
 		}
 		t := time.Now()
 		msg.Date = t.Format("2006-01-02 15:04:05")
-		save2DatabaseSQL(msg)
+		err = save2DatabaseSQL(msg)
+		if err != nil {
+			log.Println(err.Error())
+		}
 	})
 }
 
 // save2DatabaseSQL reccord posts in SQL database (MySQL, MariaDB)
-func save2DatabaseSQL(m Message) {
+func save2DatabaseSQL(m Message) error {
 	/*
 		Prepare your Database by creating the following TABLE:
 
@@ -72,8 +76,10 @@ func save2DatabaseSQL(m Message) {
 	*/
 	_, err := database.Exec("INSERT INTO post SET post_title=?, post_content=?, post_date=?", m.Title, m.Content, m.Date)
 	if err != nil {
-		log.Println(err.Error())
+		return err
 	}
+
+	return nil
 }
 
 // reqReply waits for post request, and return database rows
@@ -162,6 +168,7 @@ func main() {
 
 	watchPost(natsURL, natsPort, natsPost)
 	reqReply(natsURL, natsPort, natsGet)
+	log.Println("service started, waiting for events...")
 
 	for {
 	}

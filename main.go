@@ -166,8 +166,8 @@ func main() {
 	}
 	database = db
 
-	watchPost(natsURL, natsPort, natsPost)
-	reqReply(natsURL, natsPort, natsGet)
+	go watchPost(natsURL, natsPort, natsPost)
+	go reqReply(natsURL, natsPort, natsGet)
 	log.Println("service started, waiting for events...")
 
 	for {

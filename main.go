@@ -39,11 +39,11 @@ type Message struct {
 // watchPost capture new posts sent through NATS
 func watchPost(url, port, subj string) {
 
-	nc, err := nats.Connect("nats://" + natsURL + natsPort)
+	nc, err := nats.Connect("nats://" + url + port)
 	if err != nil {
 		log.Println(err.Error())
 	}
-	nc.Subscribe(natsPost, func(m *nats.Msg) {
+	nc.Subscribe(subj, func(m *nats.Msg) {
 		msg := Message{}
 		err := json.Unmarshal(m.Data, &msg)
 		if err != nil {
@@ -77,7 +77,7 @@ func save2DatabaseSQL(m Message) {
 // reqReply waits for post request, and return database rows
 func reqReply(url, port, subj string) {
 
-	nc, err := nats.Connect("nats://" + natsURL + natsPort)
+	nc, err := nats.Connect("nats://" + url + port)
 	if err != nil {
 		log.Println(err.Error())
 	}
@@ -86,7 +86,7 @@ func reqReply(url, port, subj string) {
 		We subscribe to Chan natsGet and we are waiting for a new message
 		 the message contains the reference of an inbox, in which we send our content
 	*/
-	nc.Subscribe(natsGet, func(m *nats.Msg) {
+	nc.Subscribe(subj, func(m *nats.Msg) {
 		log.Println("Repl sent on " + m.Reply)
 		err := nc.Publish(string(m.Reply), selectPosts())
 		//err := nc.Publish(string(m.Reply), []byte(`[{"ID": 1, "Title": "hello world", "Content": "blablabla"}]`))
@@ -124,8 +124,8 @@ func main() {
 	if os.Getenv("DBHOST") != "" {
 		dbHost = os.Getenv("DBHOST")
 	}
-	if os.Getenv("DNPORT") != "" {
-		dbPort = os.Getenv("DNPORT")
+	if os.Getenv("DBPORT") != "" {
+		dbPort = os.Getenv("DBPORT")
 	}
 	if os.Getenv("DBBASE") != "" {
 		dbBase = os.Getenv("DBBASE")
@@ -154,10 +154,6 @@ func main() {
 
 	watchPost(natsURL, natsPort, natsPost)
 	reqReply(natsURL, natsPort, natsGet)
-	port := os.Getenv("HS-MICRO-BACK")
-	if port == "" {
-		port = ":9090"
-	}
 
 	for {
 	}

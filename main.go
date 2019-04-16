@@ -124,6 +124,10 @@ func selectPosts() []byte {
 	return posts
 }
 
+func blockForever() {
+	select {}
+}
+
 func main() {
 	// Database
 	if os.Getenv("DBUSER") != "" {
@@ -166,10 +170,9 @@ func main() {
 	}
 	database = db
 
-	go watchPost(natsURL, natsPort, natsPost)
-	go reqReply(natsURL, natsPort, natsGet)
+	watchPost(natsURL, natsPort, natsPost)
+	reqReply(natsURL, natsPort, natsGet)
 	log.Println("service started, waiting for events...")
 
-	for {
-	}
+	blockForever()
 }

@@ -131,7 +131,7 @@ func reqReply(url, port, subj string) {
 		tracer, closer := initJaeger("getPages")
 		defer closer.Close()
 
-		opentracing.SetGlobalTracer(tracer)
+		//opentracing.SetGlobalTracer(tracer)
 
 		spanCtx, _ := tracer.Extract(opentracing.TextMap, opentracing.TextMapCarrier(trace.TraceID))
 		span := tracer.StartSpan("reqReply", opentracing.ChildOf(spanCtx))

@@ -129,7 +129,7 @@ func reqReply(url, port, subj string) {
 		fmt.Println(trace)
 
 		tracer, closer := initJaeger("getPages")
-		defer closer.Close()
+
 		opentracing.SetGlobalTracer(tracer)
 
 		spanCtx, _ := tracer.Extract(opentracing.TextMap, opentracing.TextMapCarrier(trace.TraceID))
@@ -143,6 +143,8 @@ func reqReply(url, port, subj string) {
 			log.Println(err.Error())
 		}
 		nc.Flush()
+
+		closer.Close()
 	})
 }
 

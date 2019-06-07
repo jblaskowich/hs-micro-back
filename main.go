@@ -144,7 +144,7 @@ func reqReply(url, port, subj string) {
 		}
 		nc.Flush()
 
-		span.Finish()
+		//span.Finish()
 	})
 }
 

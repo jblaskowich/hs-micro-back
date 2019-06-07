@@ -4,11 +4,15 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
 
 	nats "github.com/nats-io/go-nats"
+	opentracing "github.com/opentracing/opentracing-go"
+	jaeger "github.com/uber/jaeger-client-go"
+	config "github.com/uber/jaeger-client-go/config"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -38,6 +42,23 @@ type Message struct {
 
 type superTrace struct {
 	TraceID map[string]string
+}
+
+func initJaeger(service string) (opentracing.Tracer, io.Closer) {
+	cfg := &config.Configuration{
+		Sampler: &config.SamplerConfig{
+			Type:  "const",
+			Param: 1,
+		},
+		Reporter: &config.ReporterConfig{
+			LogSpans: true,
+		},
+	}
+	tracer, closer, err := cfg.New(service, config.Logger(jaeger.StdLogger))
+	if err != nil {
+		panic(fmt.Sprintf("ERROR: cannot init Jaeger: %v\n", err))
+	}
+	return tracer, closer
 }
 
 // watchPost capture new posts sent through NATS
@@ -106,6 +127,14 @@ func reqReply(url, port, subj string) {
 		err := json.Unmarshal(m.Data, &trace)
 
 		fmt.Println(trace)
+
+		tracer, closer := initJaeger("getPages")
+		defer closer.Close()
+		opentracing.SetGlobalTracer(tracer)
+
+		spanCtx, _ := tracer.Extract(opentracing.TextMap, opentracing.TextMapCarrier(trace.TraceID))
+		span := tracer.StartSpan("reqReply", opentracing.ChildOf(spanCtx))
+		defer span.Finish()
 
 		log.Println("Repl sent on " + m.Reply)
 		err = nc.Publish(string(m.Reply), selectPosts())

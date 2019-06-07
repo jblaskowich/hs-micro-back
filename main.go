@@ -129,12 +129,12 @@ func reqReply(url, port, subj string) {
 		fmt.Println(trace)
 
 		tracer, closer := initJaeger("getPages")
+		defer closer.Close()
 
 		opentracing.SetGlobalTracer(tracer)
 
 		spanCtx, _ := tracer.Extract(opentracing.TextMap, opentracing.TextMapCarrier(trace.TraceID))
 		span := tracer.StartSpan("reqReply", opentracing.ChildOf(spanCtx))
-		defer span.Finish()
 
 		log.Println("Repl sent on " + m.Reply)
 		err = nc.Publish(string(m.Reply), selectPosts())
@@ -144,7 +144,7 @@ func reqReply(url, port, subj string) {
 		}
 		nc.Flush()
 
-		closer.Close()
+		span.Finish()
 	})
 }
 

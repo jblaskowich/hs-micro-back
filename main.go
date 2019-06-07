@@ -128,7 +128,7 @@ func reqReply(url, port, subj string) {
 
 		fmt.Println(trace)
 
-		tracer, closer := initJaeger("getPages")
+		tracer, closer := initJaeger("Replyer")
 		defer closer.Close()
 
 		//opentracing.SetGlobalTracer(tracer)

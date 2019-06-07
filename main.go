@@ -37,7 +37,7 @@ type Message struct {
 }
 
 type superTrace struct {
-	TraceID string
+	TraceID map[string]string
 }
 
 // watchPost capture new posts sent through NATS
@@ -102,13 +102,10 @@ func reqReply(url, port, subj string) {
 	*/
 	nc.Subscribe(subj, func(m *nats.Msg) {
 
-		bar := superTrace{}
-		err := json.Unmarshal(m.Data, &bar)
+		trace := superTrace{}
+		err := json.Unmarshal(m.Data, &trace)
 
-		foo := make(map[string]string)
-		foo["uber-trace-id"] = bar.TraceID
-
-		fmt.Println(foo)
+		fmt.Println(trace)
 
 		log.Println("Repl sent on " + m.Reply)
 		err = nc.Publish(string(m.Reply), selectPosts())
